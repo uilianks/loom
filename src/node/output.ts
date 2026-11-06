@@ -53,6 +53,7 @@ export function writeOutputs(p: Project, out: string, opts: OutputOptions = {}):
       r.written.push(join(dir, `${name}.material.json`));
       if (opts.preview !== false) {
         mkdirSync(join(out, "_preview"), { recursive: true });
+        writeFileSync(join(out, "_preview", ".gdignore"), "");   // Godot skips the previews
         const pv = join(out, "_preview", `${name}.png`);
         writeFileSync(pv, previewSheet(name, m, seam, flipG));
         r.written.push(pv);

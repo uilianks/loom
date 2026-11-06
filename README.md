@@ -77,6 +77,100 @@ material("brick_wall", { size: 512, depth: 0.03 }, {
 })
 ```
 
+## Examples
+
+Built by `npm run examples` from the files in [`examples/`](examples). Each picture is the build's
+preview sheet: the material tiled 3×3 under a raking light, on a sphere and a cube, then every map.
+
+**Weathered brick** ([`examples/basics.tx.js`](examples/basics.tx.js)): a pattern, noise, chips cut
+by a thresholded ridged field, grime in the cavities and moss where the surface faces up.
+
+```js
+// loom basics: a brick wall built up from a pattern, noise and weathering masks.
+pal({ brick: "#8e4a35", brickL: "#b46a4c", brickD: "#5e2c22", mortar: "#9c968a", grime: "#2b2622", moss: "#4c6a2c" })
+
+const b = bricks({ rows: 10, cols: 4, gap: 0.014, bevel: 0.018, wobble: 0.5, seed: 3 }).as("bricks")
+const grain = noise({ scale: 24, octaves: 4, seed: 2 }).as("grain")
+const chips = ridged({ scale: 12, octaves: 3, seed: 5 }).threshold(0.86, 0.06).mul(b.mask).as("chips")
+
+const height = b.mul(0.85).add(grain.mul(0.12)).sub(chips.mul(0.25)).as("height")
+const grime = height.cavity(0.006, 18).max(b.mask.invert().mul(0.6)).as("grime")
+const moss = height.facing("up", 4).mul(noise({ scale: 6, seed: 9 }).threshold(0.55, 0.2)).mul(b.mask).as("moss")
+
+material("brick_wall", { size: 512, depth: 0.05 }, {
+  height,
+  color: ramp(b.id.mix(grain, 0.35), ["brickD", "brick", "brickL"]).mix("mortar", b.mask.invert())
+    .mix("grime", grime.mul(0.7)).mix("moss", moss.mul(0.85)),
+  rough: grain.levels(0, 1, 0.75, 0.95).mix(0.6, moss),
+})
+```
+
+![brick_wall preview sheet](docs/examples/brick_wall.png)
+
+**Carved, glowing runes** ([`examples/rune_slab.tx.js`](examples/rune_slab.tx.js)): hex basalt with
+`shape()` decals (rings, a star, spokes) cut into the height and lit through the emissive map.
+
+```js
+// A basalt floor slab with a glowing rune circle: hex tiles, shape() decals cut into the stone,
+// and an emissive channel where the runes are carved.
+pal({ basalt: "#3a3a40", basaltL: "#55555c", basaltD: "#222227", dust: "#6e665a", glow: "#38e0ff", glowD: "#0f5a6e" })
+
+const h = hex({ cols: 6, gap: 0.035, bevel: 0.06, vary: 0.25, seed: 4 }).as("hex")
+const grit = noise({ scale: 18, octaves: 5, seed: 6 }).as("grit")
+const cracks = ridged({ scale: 7, octaves: 3, seed: 8 }).threshold(0.9, 0.04).mul(h.mask).as("cracks")
+
+// The rune circle: two rings, a seven-point star and four spokes, all centred on the tile.
+const rune = shape({ kind: "ring", r: 0.3, w: 0.014, soft: 0.003 })
+  .max(shape({ kind: "ring", r: 0.215, w: 0.008, soft: 0.003 }))
+  .max(shape({ kind: "star", r: 0.2, inner: 0.08, sides: 7, soft: 0.003 }).sub(shape({ kind: "star", r: 0.185, inner: 0.07, sides: 7, soft: 0.003 })).clamp(0, 1))
+  .max(shape({ kind: "line", x0: 0.5, y0: 0.18, x1: 0.5, y1: 0.82, w: 0.008, soft: 0.003 }))
+  .max(shape({ kind: "line", x0: 0.18, y0: 0.5, x1: 0.82, y1: 0.5, w: 0.008, soft: 0.003 })).as("rune")
+
+const height = h.mul(0.8).add(grit.mul(0.12)).sub(cracks.mul(0.2)).sub(rune.mul(0.18)).as("height")
+const dust = height.cavity(0.006, 14).max(h.mask.invert().mul(0.7)).as("dust")
+
+material("rune_slab", { size: 512, depth: 0.045 }, {
+  height,
+  color: ramp(h.id.mix(grit, 0.45), ["basaltD", "basalt", "basaltL"]).mix("dust", dust.mul(0.55)).mix("glowD", rune),
+  rough: grit.levels(0, 1, 0.7, 0.92).mix(0.35, rune),
+  emit: ramp(rune.mul(noise({ scale: 5, seed: 3 }).levels(0.3, 0.7, 0.6, 1)), ["#000000", "glow"]),
+})
+```
+
+![rune_slab preview sheet](docs/examples/rune_slab.png)
+
+**Painted metal** ([`examples/hazard_plate.tx.js`](examples/hazard_plate.tx.js)): tread-plate steel
+(metallic, brushed roughness), a hazard band masked by a `rect` decal, paint worn off the raised studs
+with `convex()`, and rust running down from the seams with `drips()`.
+
+```js
+// A tread-plate steel floor with a painted hazard band: a metal material (metallic + roughness),
+// stripes masked by a rect decal, paint worn off the raised studs, rust bleeding down from the seams.
+pal({ steel: "#7c8288", steelL: "#a9afb4", steelD: "#4b5055", yellow: "#e2b21c", black: "#1d1c1a", rust: "#7a3b1c" })
+
+const plates = tiles({ rows: 2, cols: 2, gap: 0.006, bevel: 0.01, vary: 0.05, seed: 2 }).as("plates")
+const studs = dots({ scale: 14, radius: 0.22, jitter: 0, soft: 0.25 }).as("studs")
+const grain = noise({ scale: [40, 6], octaves: 3, seed: 5 }).as("brushed")
+
+// Hazard band: diagonal stripes, only inside a horizontal strip across the middle.
+const band = shape({ kind: "rect", cy: 0.5, w: 1.2, h: 0.22, soft: 0.004 }).as("band")
+const diag = stripes({ count: 12, dir: "v", soft: 0.04 }).warp(stripes({ count: 1, dir: "h", soft: 1 }), 0.25).as("diag")
+
+const height = plates.mul(0.6).add(studs.mul(0.25)).add(grain.mul(0.03)).as("height")
+const worn = height.convex(0.006, 14).add(noise({ scale: 9, seed: 7 }).sub(0.5).mul(0.6)).threshold(0.45, 0.08).as("worn")
+const paint = band.mul(worn.invert()).as("paint")
+const rust = plates.mask.invert().drips({ length: 0.12, density: 0.35, seed: 9 }).mul(noise({ scale: 6, seed: 4 }).levels(0.3, 0.7)).mul(0.75).as("rust")
+
+material("hazard_plate", { size: 512, depth: 0.03 }, {
+  height: height.add(paint.mul(0.02)),
+  color: ramp(grain, ["steelD", "steel", "steelL"]).mix("rust", rust).mix(ramp(diag, ["black", "yellow"]), paint),
+  rough: grain.levels(0, 1, 0.3, 0.45).mix(0.85, rust).mix(0.6, paint),
+  metal: paint.max(rust).invert(),
+})
+```
+
+![hazard_plate preview sheet](docs/examples/hazard_plate.png)
+
 ## Features
 
 - **Generators**: fractal and ridged noise (stretchable for grain and streaks), Worley cells with
@@ -100,7 +194,8 @@ material("brick_wall", { size: 512, depth: 0.03 }, {
 ## Use as a Claude Code skill
 
 ```bash
-git clone https://github.com/uilianks/loom ~/.claude/skills/loom-textures && (cd ~/.claude/skills/loom-textures && npm install)
+git clone https://github.com/uilianks/loom && cd loom && npm install
+ln -s "$PWD" ~/.claude/skills/loom-textures      # a link, so the skill is always this checkout
 ```
 
 Then ask Claude for a material ("a mossy castle wall", "rusted ship hull", "a stylized grass tile").
@@ -111,6 +206,7 @@ API is in [reference.md](reference.md).
 
 ```bash
 npm run check          # type check + tests (seamlessness of every generator and op, normals, errors, outputs, feedback)
+                       # + build every example and refresh docs/examples (npm run examples)
 node scripts/gallery.ts  # regenerate docs/media/gallery.png and tiled.png
 ```
 

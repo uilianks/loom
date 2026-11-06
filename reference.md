@@ -42,7 +42,7 @@ detail (wood grain, streaks). `seed` picks a different variation.
 | `waves()` | `count` 6, `dir`, `warp` 0.4, `scale` 3, `seed` | wavy bands (sand ripples, rings) |
 | `weave()` | `threads` 8 (even), `gap` 0.12, `seed` | basket / cloth weave, over-under strips; `.mask` (1 on a thread) |
 | `checker()` | `cols` 8, `rows` (= cols), both even | checkerboard 0 / 1 (floors, gingham, race flags) |
-| `shape()` | `kind` circle / rect / ngon / star / ring / line, `cx` `cy` 0.5, `r` 0.25, `w` `h`, `sides` 6, `inner`, `round`, `rot` degrees, `soft` 0.01, `x0 y0 x1 y1` (line) | a decal: 1 inside, 0 outside, soft edge; positions wrap so shapes near an edge continue on the other side. Road markings, manhole rims, runes, hazard stripes (`stripes().rotate` + a `rect` mask), buttons, logos. |
+| `shape()` | `kind` circle / rect / ngon / star / ring / line, `cx` `cy` 0.5, `r` 0.25, `w` `h` (a ring's or line's `w` is its band width), `sides` 6, `inner` (a star's valley radius, default `r / 2`), `round`, `rot` degrees, `soft` 0.01, `x0 y0 x1 y1` (line) | a decal: 1 inside, 0 outside, soft edge; positions wrap so shapes near an edge continue on the other side. Road markings, manhole rims, runes, hazard stripes (`stripes().rotate` + a `rect` mask), buttons, logos. |
 
 ### Images
 
@@ -100,7 +100,7 @@ Every operator returns a new field; numbers work anywhere a field does.
 | `out/<name>/<name>_orm.png` | AO, roughness, metallic in R, G, B (glTF uses G/B; Unreal all three) |
 | `out/<name>/<name>_emissive.png` | when `emit` is set |
 | `out/<name>/<name>.material.json` | the files, size, normal convention, depth and the seam check |
-| `out/_preview/<name>.png` | tiled plane, sphere, cube and every map |
+| `out/_preview/<name>.png` | tiled plane, sphere, cube and every map (the folder holds a `.gdignore`, so Godot does not import previews) |
 
 `loom info file.tx.js <name>` prints value ranges per map and the seam check. `loom list file.tx.js`
 lists materials and named fields. `loom serve file.tx.js [--port 4350] [--no-out]` runs the viewer.
