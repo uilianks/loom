@@ -214,3 +214,7 @@ node scripts/gallery.ts  # regenerate docs/media/gallery.png and tiled.png
 
 [MIT](LICENSE). Inspired by and partly adapted from [claude-pxl](https://github.com/crsolver/claude-pxl)
 by crsolver; see [NOTICE](NOTICE).
+
+## Support
+
+If this tool helps you, you can support its development on [Ko-fi](https://ko-fi.com/uiliankidricki).
